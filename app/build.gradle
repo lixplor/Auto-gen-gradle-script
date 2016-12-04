@@ -4,7 +4,7 @@ apply plugin: 'com.android.application'
 def buildTime = new Date().format("YYYYMMdd")
 def gitShortHash  = 'git rev-parse --short HEAD'.execute([], project.rootDir).text.trim()
 def getAppName(){
-    return "APPNAME"
+    return "APP"
 }
 def genFileName(versionCode, versionName, versionNameSuffix){
     return getAppName() + "_" + versionCode + "_" + versionName + versionNameSuffix + ".apk"
@@ -35,56 +35,47 @@ android {
         debug {
             applicationIdSuffix ".dev"
             versionNameSuffix "_dev_b" + buildTime + "@" + gitShortHash
-            buildConfigField("String", "SERVER_BASE_URL", "\"1.1.1.1\"")
+            resValue "string", "app_name", getAppName() + "_dev"
+            buildConfigField("String", "SERVER_BASE_URL", "\"http://api.host.com/dev\"")
             buildConfigField("boolean", "LOG_ENABLED", "true")
             buildConfigField("boolean", "BUGTAGS_ENABLED", "false")
             signingConfig signingConfigs.debug
             shrinkResources false
             zipAlignEnabled true
-            android.applicationVariants.all {
-                variant ->
-                    variant.outputs.each {
-                        output ->
-                            output.outputFile = new File(output.outputFile.parent, genFileName(defaultConfig.versionCode, defaultConfig.versionName, versionNameSuffix));
-                    }
-            }
         }
         // 测试包
         fortest {
-            applicationIdSuffix ".test" // todo 会导致三方平台包名不符?
+            applicationIdSuffix ".test" // todo 测试环境需要使用测试包名注册单独的三方平台应用
             versionNameSuffix "_test_b" + buildTime + "@" + gitShortHash
-            buildConfigField("String", "SERVER_BASE_URL", "\"2.2.2.2\"")
+            resValue "string", "app_name", getAppName() + "_test"
+            buildConfigField("String", "SERVER_BASE_URL", "\"http://api.host.com/test\"")
             buildConfigField("boolean", "LOG_ENABLED", "false")
             buildConfigField("boolean", "BUGTAGS_ENABLED", "true")
             signingConfig signingConfigs.debug
             shrinkResources false
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            android.applicationVariants.all {
-                variant ->
-                    variant.outputs.each {
-                        output ->
-                            output.outputFile = new File(output.outputFile.parent, genFileName(defaultConfig.versionCode, defaultConfig.versionName, versionNameSuffix));
-                    }
-            }
         }
         // 正式包
         release {
-            buildConfigField("String", "SERVER_BASE_URL", "\"3.3.3.3\"")
+            resValue "string", "app_name", getAppName()
+            buildConfigField("String", "SERVER_BASE_URL", "\"http://api.host.com/release\"")
             buildConfigField("boolean", "LOG_ENABLED", "false")
             buildConfigField("boolean", "BUGTAGS_ENABLED", "true")
             signingConfig signingConfigs.release
             shrinkResources true
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            android.applicationVariants.all {
-                variant ->
-                    variant.outputs.each {
-                        output ->
-                            output.outputFile = new File(output.outputFile.parent, genFileName(defaultConfig.versionCode, defaultConfig.versionName, versionNameSuffix));
-                    }
-            }
         }
+    }
+
+    // 输出文件名
+    android.applicationVariants.all {
+        variant ->
+            variant.outputs.each {
+                output ->
+                    output.outputFile = new File(output.outputFile.parent, genFileName(defaultConfig.versionCode, defaultConfig.versionName, variant.buildType.versionNameSuffix));
+            }
     }
 }
 
